@@ -1,0 +1,17 @@
+export type EventType = "pee" | "poop" | "food" | "sleep_start" | "sleep_end" | "walk";
+
+export interface Dog {
+  id: number;
+  name: string;
+  breed: string | null;
+  birth_date: string | null;
+  weight_kg: number | null;
+}
+
+export interface DogEvent {
+  id: number;
+  dog_id: number;
+  type: EventType;
+  timestamp: string;
+  metadata_json: Record<string, unknown> | null;
+}
