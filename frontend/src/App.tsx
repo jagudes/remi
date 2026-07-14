@@ -4,6 +4,9 @@ import type { Dog, DogEvent, EventType } from "./types";
 import { Dashboard } from "./components/Dashboard";
 import { getPrediction } from "./api";
 import type { Prediction } from "./types";
+import { ScheduleView } from "./components/ScheduleView";
+import { getSchedule, regenerateSchedule } from "./api";
+import type { Schedule } from "./types";
 
 const EVENT_LABELS: Record<EventType, string> = {
   pee: "🐕 Siku",
@@ -21,6 +24,7 @@ function App() {
   const [newDogName, setNewDogName] = useState("");
   const [loading, setLoading] = useState(false);
   const [prediction, setPrediction] = useState<Prediction | null>(null);
+  const [schedule, setSchedule] = useState<Schedule | null>(null);
 
 
   useEffect(() => {
@@ -30,12 +34,24 @@ function App() {
     });
   }, []);
 
-  useEffect(() => {
+useEffect(() => {
   if (activeDogId !== null) {
     refreshEvents(activeDogId);
     refreshPrediction(activeDogId);
+    refreshSchedule(activeDogId);
   }
 }, [activeDogId]);
+
+async function refreshSchedule(dogId: number) {
+  const data = await getSchedule(dogId);
+  setSchedule(data);
+}
+
+async function handleRegenerateSchedule() {
+  if (activeDogId === null) return;
+  const data = await regenerateSchedule(activeDogId);
+  setSchedule(data);
+}
 
 async function refreshPrediction(dogId: number) {
   const data = await getPrediction(dogId);
@@ -111,7 +127,7 @@ async function refreshPrediction(dogId: number) {
       {activeDog && (
         <>
             <Dashboard prediction={prediction} />
-
+<ScheduleView schedule={schedule} onRegenerate={handleRegenerateSchedule} />
           <h2 style={{ fontSize: 18, marginTop: 32 }}>
             Zaloguj zdarzenie dla: {activeDog.name}
           </h2>

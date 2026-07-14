@@ -24,3 +24,18 @@ export interface Prediction {
   best_moment_in_minutes: number | null;
   explanation: string;
 }
+
+export interface ScheduleBlock {
+  type: "wake_up" | "walk" | "food" | "nap";
+  time: string;
+  reason: string;
+}
+
+export interface Schedule {
+  id: number;
+  dog_id: number;
+  date: string;
+  blocks: ScheduleBlock[];
+  generated_at: string;
+  is_adapted: boolean;
+}

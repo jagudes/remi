@@ -45,3 +45,17 @@ export async function getPrediction(dogId: number) {
   if (!res.ok) throw new Error("Nie udało się pobrać prognozy");
   return res.json();
 }
+
+export async function getSchedule(dogId: number) {
+  const res = await fetch(`${API_URL}/dogs/${dogId}/schedule`);
+  if (!res.ok) throw new Error("Nie udało się pobrać planu");
+  return res.json();
+}
+
+export async function regenerateSchedule(dogId: number) {
+  const res = await fetch(`${API_URL}/dogs/${dogId}/schedule/regenerate`, {
+    method: "POST",
+  });
+  if (!res.ok) throw new Error("Nie udało się przebudować planu");
+  return res.json();
+}
