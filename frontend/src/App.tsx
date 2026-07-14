@@ -1,6 +1,9 @@
 import { useEffect, useState } from "react";
 import { getDogs, createDog, getEvents, logEvent } from "./api";
 import type { Dog, DogEvent, EventType } from "./types";
+import { Dashboard } from "./components/Dashboard";
+import { getPrediction } from "./api";
+import type { Prediction } from "./types";
 
 const EVENT_LABELS: Record<EventType, string> = {
   pee: "🐕 Siku",
@@ -17,6 +20,8 @@ function App() {
   const [events, setEvents] = useState<DogEvent[]>([]);
   const [newDogName, setNewDogName] = useState("");
   const [loading, setLoading] = useState(false);
+  const [prediction, setPrediction] = useState<Prediction | null>(null);
+
 
   useEffect(() => {
     getDogs().then((data: Dog[]) => {
@@ -26,10 +31,16 @@ function App() {
   }, []);
 
   useEffect(() => {
-    if (activeDogId !== null) {
-      refreshEvents(activeDogId);
-    }
-  }, [activeDogId]);
+  if (activeDogId !== null) {
+    refreshEvents(activeDogId);
+    refreshPrediction(activeDogId);
+  }
+}, [activeDogId]);
+
+async function refreshPrediction(dogId: number) {
+  const data = await getPrediction(dogId);
+  setPrediction(data);
+}
 
   async function refreshEvents(dogId: number) {
     const data = await getEvents(dogId);
@@ -53,6 +64,8 @@ function App() {
     if (activeDogId === null) return;
     await logEvent(activeDogId, type);
     refreshEvents(activeDogId);
+    refreshPrediction(activeDogId);
+
   }
 
   const activeDog = dogs.find((d) => d.id === activeDogId);
@@ -97,6 +110,8 @@ function App() {
 
       {activeDog && (
         <>
+            <Dashboard prediction={prediction} />
+
           <h2 style={{ fontSize: 18, marginTop: 32 }}>
             Zaloguj zdarzenie dla: {activeDog.name}
           </h2>

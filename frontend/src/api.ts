@@ -39,3 +39,9 @@ export async function logEvent(
   if (!res.ok) throw new Error("Nie udało się zapisać zdarzenia");
   return res.json();
 }
+
+export async function getPrediction(dogId: number) {
+  const res = await fetch(`${API_URL}/dogs/${dogId}/prediction`);
+  if (!res.ok) throw new Error("Nie udało się pobrać prognozy");
+  return res.json();
+}

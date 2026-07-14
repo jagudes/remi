@@ -15,3 +15,12 @@ export interface DogEvent {
   timestamp: string;
   metadata_json: Record<string, unknown> | null;
 }
+
+export interface Prediction {
+  last_pee_at: string | null;
+  minutes_since_last_pee: number | null;
+  predicted_next_pee_at: string | null;
+  probability_needs_out_now: number;
+  best_moment_in_minutes: number | null;
+  explanation: string;
+}
