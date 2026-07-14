@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 
 from app.database import Base, engine, SessionLocal
 from app.models.user import User
-from app.routers import dogs, events
+from app.routers import dogs, events, predictions
 
 app = FastAPI(title="Remi API")
 
@@ -18,7 +18,7 @@ app.add_middleware(
 
 app.include_router(dogs.router)
 app.include_router(events.router)
-
+app.include_router(predictions.router)
 
 @app.on_event("startup")
 def on_startup():

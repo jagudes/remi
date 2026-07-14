@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 from app.models.event import Event, EventType
 from app.services.analytics import BehaviorStats, compute_behavior_stats
@@ -23,7 +23,7 @@ def _last_event_of_type(events: list[Event], event_type: EventType) -> Event | N
 
 
 def predict(events: list[Event], now: datetime | None = None) -> Prediction:
-    now = now or datetime.utcnow()
+    now = now or datetime.now(timezone.utc)
     stats: BehaviorStats = compute_behavior_stats(events)
 
     last_pee = _last_event_of_type(events, EventType.PEE)
