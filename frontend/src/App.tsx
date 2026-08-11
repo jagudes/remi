@@ -1,12 +1,8 @@
 import { useEffect, useState } from "react";
-import { getDogs, createDog, getEvents, logEvent } from "./api";
-import type { Dog, DogEvent, EventType } from "./types";
+import { getDogs, createDog, getEvents, logEvent, getPrediction, getSchedule, regenerateSchedule, fetchBreedInfo } from "./api";
+import type { Dog, DogEvent, EventType, Prediction, Schedule, BreedInfo } from "./types";
 import { Dashboard } from "./components/Dashboard";
-import { getPrediction } from "./api";
-import type { Prediction } from "./types";
 import { ScheduleView } from "./components/ScheduleView";
-import { getSchedule, regenerateSchedule } from "./api";
-import type { Schedule } from "./types";
 
 const EVENT_LABELS: Record<EventType, string> = {
   pee: "🐕 Siku",
@@ -26,6 +22,8 @@ function App() {
   const [prediction, setPrediction] = useState<Prediction | null>(null);
   const [schedule, setSchedule] = useState<Schedule | null>(null);
 
+  const [breedInfo, setBreedInfo] = useState<BreedInfo | null>(null);
+  const [breedLoading, setBreedLoading] = useState(false);
 
   useEffect(() => {
     getDogs().then((data: Dog[]) => {
@@ -39,8 +37,21 @@ useEffect(() => {
     refreshEvents(activeDogId);
     refreshPrediction(activeDogId);
     refreshSchedule(activeDogId);
+    refreshBreedInfo(activeDogId);
   }
 }, [activeDogId]);
+
+async function refreshBreedInfo(dogId: number) {
+    setBreedLoading(true);
+    try {
+      const data = await fetchBreedInfo(dogId);
+      setBreedInfo(data);
+    } catch (err) {
+      console.error("Błąd pobierania rasy:", err);
+    } finally {
+      setBreedLoading(false);
+    }
+  }
 
 async function refreshSchedule(dogId: number) {
   const data = await getSchedule(dogId);
@@ -93,6 +104,7 @@ async function refreshPrediction(dogId: number) {
         Śledzenie zachowania szczeniaka
       </p>
 
+
       {dogs.length === 0 && (
         <div style={{ marginTop: 24 }}>
           <p>Nie masz jeszcze dodanego psa. Dodaj pierwszego:</p>
@@ -128,7 +140,38 @@ async function refreshPrediction(dogId: number) {
         <>
             <Dashboard prediction={prediction} />
 <ScheduleView schedule={schedule} onRegenerate={handleRegenerateSchedule} />
-          <h2 style={{ fontSize: 18, marginTop: 32 }}>
+{breedLoading ? (
+            <p style={{ color: "#7a7266", fontSize: 14 }}>Ładowanie informacji o rasie...</p>
+          ) : breedInfo && !breedInfo.error ? (
+            <div
+              style={{
+                marginTop: 20,
+                padding: 16,
+                borderRadius: 12,
+                background: "#f7f5f0",
+                border: "1px solid #e5e0d4",
+              }}
+            >
+              <h3 style={{ margin: "0 0 8px 0", fontSize: 16, color: "#3d6b4f" }}>
+                ℹ️ Informacje o rasie: {breedInfo.name}
+              </h3>
+              <ul style={{ margin: 0, paddingLeft: 18, fontSize: 14, color: "#4a453e", lineHeight: "1.6" }}>
+                {breedInfo.temperament && <li><strong>Temperament:</strong> {breedInfo.temperament}</li>}
+                {breedInfo.bred_for && <li><strong>Rola:</strong> {breedInfo.bred_for}</li>}
+                {breedInfo.life_span && <li><strong>Długość życia:</strong> {breedInfo.life_span}</li>}
+                {breedInfo.weight_metric && <li><strong>Waga:</strong> {breedInfo.weight_metric}</li>}
+                {breedInfo.breed_group && <li><strong>Grupa:</strong> {breedInfo.breed_group}</li>}
+              </ul>
+            </div>
+          ) : breedInfo?.error ? (
+            <p style={{ color: "#a84242", fontSize: 13, marginTop: 12 }}>
+              Błąd rasy: {breedInfo.error}
+            </p>
+          ) : null}
+
+
+
+            <h2 style={{ fontSize: 18, marginTop: 32 }}>
             Zaloguj zdarzenie dla: {activeDog.name}
           </h2>
           <div

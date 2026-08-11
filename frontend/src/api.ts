@@ -59,3 +59,13 @@ export async function regenerateSchedule(dogId: number) {
   if (!res.ok) throw new Error("Nie udało się przebudować planu");
   return res.json();
 }
+
+import type {BreedInfo} from './types';
+
+export async function fetchBreedInfo(dogId: number): Promise<BreedInfo> {
+  const response = await fetch(`${API_URL}/dogs/${dogId}/breed-info`);
+  if (!response.ok) {
+    throw new Error('Nie udało się połączyć z serwerem');
+  }
+  return response.json();
+}

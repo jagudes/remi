@@ -39,3 +39,14 @@ export interface Schedule {
   generated_at: string;
   is_adapted: boolean;
 }
+
+export interface BreedInfo {
+  name: string;
+  temperament: string | null;
+  bred_for: string | null;
+  life_span: string | null;
+  weight_metric: string | null;
+  breed_group: string | null;
+  found: boolean;
+  error: string | null;
+}
