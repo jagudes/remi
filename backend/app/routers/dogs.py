@@ -3,7 +3,8 @@ from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.models.dog import Dog
-from app.schemas.dog import DogCreate, DogOut
+from app.schemas.dog import DogCreate, DogOut, BreedInfoOut
+from app.services.breed_info import fetch_breed_info
 
 router = APIRouter(prefix="/dogs", tags=["dogs"])
 
@@ -39,3 +40,22 @@ def delete_dog(dog_id: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Dog not found")
     db.delete(dog)
     db.commit()
+
+@router.get("/{dog_id}/breed-info", response_model=BreedInfoOut)
+def get_breed_info(dog_id: int, db: Session = Depends(get_db)):
+    dog = db.query(Dog).filter(Dog.id == dog_id).first()
+    if not dog:
+        raise HTTPException(status_code=404, detail="Dog not found")
+
+    info = fetch_breed_info(dog.breed or "")
+
+    return BreedInfoOut(
+        name=info.name,
+        temperament=info.temperament,
+        bred_for=info.bred_for,
+        life_span=info.life_span,
+        weight_metric=info.weight_metric,
+        breed_group=info.breed_group,
+        found=info.found,
+        error=info.error,
+    )
