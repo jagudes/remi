@@ -20,6 +20,12 @@ class Prediction:
     best_moment_in_minutes: float | None
     explanation: str
 
+def _ensure_naive(dt: datetime | None) -> datetime | None:
+    if dt is None:
+        return None
+    if dt.tzinfo is not None:
+        return dt.astimezone(timezone.utc).replace(tzinfo=None)
+    return dt
 
 def _last_event_of_type(events: list[Event], event_type: EventType) -> Event | None:
     matching = [e for e in events if e.type == event_type]
@@ -29,8 +35,10 @@ def _last_event_of_type(events: list[Event], event_type: EventType) -> Event | N
 
 
 def _train_model(training_df: pd.DataFrame) -> RandomForestRegressor:
-    X = pd.get_dummies(training_df[["trigger_type", "hour_of_day", "minutes_since_prev_pee"]])
-    y = training_df["gap_to_next_pee_minutes"]
+    clean_df = training_df.dropna(subset=["gap_to_next_pee_minutes"]).fillna(0)
+
+    X = pd.get_dummies(clean_df[["trigger_type" , "hour_of_day", "minutes_since_prev_pee"]])
+    y = clean_df["gap_to_next_pee_minutes"]
 
     model = RandomForestRegressor(n_estimators=100, max_depth=6, random_state=42)
     model.fit(X, y)
@@ -48,7 +56,6 @@ def _predict_with_ml(
         [{"trigger_type": trigger_type, "hour_of_day": hour_of_day, "minutes_since_prev_pee": minutes_since_prev_pee}]
     )
     row_encoded = pd.get_dummies(row)
-    # Uzupełniamy brakujące kolumny (np. inne typy triggera niewidziane w tym wierszu) zerami
     row_encoded = row_encoded.reindex(columns=feature_columns, fill_value=0)
     return float(model.predict(row_encoded)[0])
 
@@ -58,8 +65,12 @@ def predict(
     now: datetime | None = None,
     energy_multiplier: float = 1.0,
 ) -> Prediction:
-    now = now or datetime.now(timezone.utc)
-    stats: BehaviorStats = compute_behavior_stats(events, energy_multiplier=energy_multiplier)
+    now = _ensure_naive(now or datetime.now(timezone.utc))
+
+    for e in events:
+        e.timestamp = _ensure_naive(e.timestamp)
+
+    stats: BehaviorStats = compute_behavior_stats(events)
 
     last_pee = _last_event_of_type(events, EventType.PEE)
     last_food = _last_event_of_type(events, EventType.FOOD)
@@ -86,23 +97,30 @@ def predict(
     if last_sleep_end and last_sleep_end.timestamp > last_pee.timestamp:
         candidate_starts.append((last_sleep_end.timestamp, EventType.SLEEP_END.value))
 
+    ml_success = False
     if use_ml:
-        model, feature_columns = _train_model(training_df)
+        try:
+            model, feature_columns = _train_model(training_df)
 
-        scored_candidates = []
-        for trigger_time, trigger_type in candidate_starts:
-            minutes_since_prev_pee = (trigger_time - last_pee.timestamp).total_seconds() / 60
-            wait_minutes = _predict_with_ml(
-                model, feature_columns, trigger_type, trigger_time.hour, max(minutes_since_prev_pee, 0)
+            scored_candidates = []
+            for trigger_time, trigger_type in candidate_starts:
+                minutes_since_prev_pee = (trigger_time - last_pee.timestamp).total_seconds() / 60
+                wait_minutes = _predict_with_ml(
+                    model, feature_columns, trigger_type, trigger_time.hour, max(minutes_since_prev_pee, 0)
+                )
+                wait_minutes = max(wait_minutes, 0)
+                scored_candidates.append((trigger_time, wait_minutes, _reason_label(trigger_type)))
+
+            trigger_time, wait_minutes, reason = min(
+                scored_candidates, key=lambda c: c[0] + timedelta(minutes=c[1])
             )
-            wait_minutes = max(wait_minutes, 0)
-            scored_candidates.append((trigger_time, wait_minutes, _reason_label(trigger_type)))
+            confidence_note = f"Prognoza z modelu ML (wytrenowanego na {len(training_df)} zapisanych sytuacjach)."
+            ml_success = True
+        except Exception as err:
+            print(f"ML predict error - {err}")
+            ml_success = False
 
-        trigger_time, wait_minutes, reason = min(
-            scored_candidates, key=lambda c: c[0] + timedelta(minutes=c[1])
-        )
-        confidence_note = f"Prognoza z modelu ML (wytrenowanego na {len(training_df)} zapisanych sytuacjach)."
-    else:
+    if not ml_success:
         reason_to_minutes = {
             EventType.FOOD.value: stats.avg_minutes_after_food,
             EventType.SLEEP_END.value: stats.avg_minutes_after_sleep,

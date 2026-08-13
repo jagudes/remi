@@ -2,6 +2,7 @@ import type { Prediction } from "../types";
 
 interface Props {
   prediction: Prediction | null;
+  loading?: boolean;
 }
 
 function probabilityColor(p: number): string {
@@ -10,9 +11,34 @@ function probabilityColor(p: number): string {
   return "#3d6b4f";
 }
 
-export function Dashboard({ prediction }: Props) {
+export function Dashboard({ prediction, loading }: Props) {
+  if (loading) {
+    return (
+      <div style={{ padding: 16, border: "1px dashed #d8d2c4", borderRadius: 12, marginTop: 16, textAlign: "center", color: "#7a7266" }}>
+          Ładowanie prognozy...
+      </div>
+    );
+  }
+
   if (!prediction) {
-    return <p>Ładowanie prognozy...</p>;
+    return (
+      <div
+        style={{
+          border: "1px solid #d8d2c4",
+          borderRadius: 12,
+          padding: 16,
+          background: "#fdfbf7",
+          marginTop: 16,
+          textAlign: "center",
+          color: "#7a7266",
+          fontSize: 14,
+        }}
+      >
+        🐾 <strong>Brak danych do prognozy.</strong>
+        <br />
+        Zaloguj pierwsze zdarzenie (np. Siku lub Spacer) poniżej!
+      </div>
+    );
   }
 
   const probabilityPercent = Math.round(

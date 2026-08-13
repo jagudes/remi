@@ -65,8 +65,13 @@ async function handleRegenerateSchedule() {
 }
 
 async function refreshPrediction(dogId: number) {
-  const data = await getPrediction(dogId);
-  setPrediction(data);
+  try {
+    const data = await getPrediction(dogId);
+    setPrediction(data);
+  } catch (err) {
+    console.error("Błąd pobierania prognozy:", err);
+    setPrediction(null);
+  }
 }
 
   async function refreshEvents(dogId: number) {
@@ -103,7 +108,76 @@ async function refreshPrediction(dogId: number) {
       <p style={{ color: "#7a7266", marginTop: 0 }}>
         Śledzenie zachowania szczeniaka
       </p>
+{dogs.length > 0 && (
+        <div
+          style={{
+            margin: "16px 0",
+            padding: 12,
+            background: "#fdfbf7",
+            borderRadius: 10,
+            border: "1px solid #e5e0d4",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            flexWrap: "wrap",
+            gap: 12,
+          }}
+        >
+          <div>
+            <label htmlFor="dog-select" style={{ marginRight: 8, fontSize: 14, fontWeight: "bold" }}>
+              Wybierz psa:
+            </label>
+            <select
+              id="dog-select"
+              value={activeDogId ?? ""}
+              onChange={(e) => setActiveDogId(Number(e.target.value))}
+              style={{
+                padding: "6px 12px",
+                borderRadius: 8,
+                border: "1px solid #d8d2c4",
+                background: "white",
+                fontSize: 14,
+                cursor: "pointer",
+              }}
+            >
+              {dogs.map((dog) => (
+                <option key={dog.id} value={dog.id}>
+                  {dog.name} (ID: {dog.id})
+                </option>
+              ))}
+            </select>
+          </div>
 
+          <div style={{ display: "flex", gap: 6 }}>
+            <input
+              value={newDogName}
+              onChange={(e) => setNewDogName(e.target.value)}
+              placeholder="Imię nowego psa"
+              style={{
+                padding: "6px 10px",
+                borderRadius: 6,
+                border: "1px solid #ccc",
+                fontSize: 13,
+              }}
+            />
+            <button
+              onClick={handleAddDog}
+              disabled={loading}
+              style={{
+                padding: "6px 12px",
+                borderRadius: 6,
+                border: "none",
+                background: "#3d6b4f",
+                color: "white",
+                cursor: "pointer",
+                fontSize: 13,
+              }}
+            >
+              + Dodaj
+            </button>
+          </div>
+        </div>
+      )}
 
       {dogs.length === 0 && (
         <div style={{ marginTop: 24 }}>
