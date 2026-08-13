@@ -29,8 +29,10 @@ def generate_schedule(
     events: list[Event],
     wake_up_time: time = DEFAULT_WAKE_UP_TIME,
     reference_date: datetime | None = None,
+    energy_multiplier: float = 1.0,
+
 ) -> GeneratedSchedule:
-    stats: BehaviorStats = compute_behavior_stats(events)
+    stats: BehaviorStats = compute_behavior_stats(events, energy_multiplier=energy_multiplier)
     recent_accidents = count_recent_accidents(events)
     is_adapted = recent_accidents >= ACCIDENT_THRESHOLD_FOR_ADAPTATION
 

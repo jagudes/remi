@@ -70,7 +70,7 @@ def predict(
     for e in events:
         e.timestamp = _ensure_naive(e.timestamp)
 
-    stats: BehaviorStats = compute_behavior_stats(events)
+    stats: BehaviorStats = compute_behavior_stats(events, energy_multiplier=energy_multiplier)
 
     last_pee = _last_event_of_type(events, EventType.PEE)
     last_food = _last_event_of_type(events, EventType.FOOD)

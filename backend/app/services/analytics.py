@@ -32,14 +32,18 @@ def _events_to_dataframe(events: list[Event]) -> pd.DataFrame:
     return df
 
 
-def compute_behavior_stats(events: list[Event]) -> BehaviorStats:
+def compute_behavior_stats(events: list[Event], energy_multiplier: float = 1.0) -> BehaviorStats:
+    eff_default_after_food = DEFAULT_MINUTES_AFTER_FOOD * energy_multiplier
+    eff_default_after_sleep = DEFAULT_MINUTES_AFTER_SLEEP * energy_multiplier
+    eff_default_between_pee = DEFAULT_MINUTES_BETWEEN_PEE * energy_multiplier
+
     df = _events_to_dataframe(events)
 
     if df.empty:
         return BehaviorStats(
-            avg_minutes_after_food=DEFAULT_MINUTES_AFTER_FOOD,
-            avg_minutes_after_sleep=DEFAULT_MINUTES_AFTER_SLEEP,
-            avg_minutes_between_pee=DEFAULT_MINUTES_BETWEEN_PEE,
+            avg_minutes_after_food=eff_default_after_food,
+            avg_minutes_after_sleep=eff_default_after_sleep,
+            avg_minutes_between_pee=eff_default_between_pee,
             sample_size=0,
             is_personalized=False,
         )
@@ -54,9 +58,9 @@ def compute_behavior_stats(events: list[Event]) -> BehaviorStats:
     personalized = sample_size >= MIN_SAMPLES_FOR_PERSONALIZED_STATS
 
     return BehaviorStats(
-        avg_minutes_after_food=_safe_median(after_food_gaps, DEFAULT_MINUTES_AFTER_FOOD),
-        avg_minutes_after_sleep=_safe_median(after_sleep_gaps, DEFAULT_MINUTES_AFTER_SLEEP),
-        avg_minutes_between_pee=_safe_median(between_pee_gaps, DEFAULT_MINUTES_BETWEEN_PEE),
+        avg_minutes_after_food=_safe_median(after_food_gaps, eff_default_after_food),
+        avg_minutes_after_sleep=_safe_median(after_sleep_gaps, eff_default_after_sleep),
+        avg_minutes_between_pee=_safe_median(between_pee_gaps, eff_default_between_pee),
         sample_size=sample_size,
         is_personalized=personalized,
     )

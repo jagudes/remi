@@ -6,6 +6,8 @@ from app.models.dog import Dog
 from app.models.event import Event
 from app.schemas.schedule import PredictionOut
 from app.services.predictor import predict
+from app.services.breed_info import fetch_breed_info, estimate_energy_multiplier
+
 
 router = APIRouter(prefix="/dogs/{dog_id}/prediction", tags=["predictions"])
 
@@ -22,8 +24,10 @@ def get_prediction(dog_id: int, db: Session = Depends(get_db)):
         .order_by(Event.timestamp.asc())
         .all()
     )
+    breed_info = fetch_breed_info(dog.breed or "")
+    energy_multiplier = estimate_energy_multiplier(breed_info.temperament)
 
-    result = predict(events)
+    result = predict(events, energy_multiplier=energy_multiplier)
 
     return PredictionOut(
         last_pee_at=result.last_pee_at,

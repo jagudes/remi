@@ -9,6 +9,7 @@ from app.models.event import Event
 from app.models.schedule import Schedule
 from app.schemas.schedule import ScheduleOut
 from app.services.planner import generate_schedule
+from app.services.breed_info import fetch_breed_info, estimate_energy_multiplier
 
 router = APIRouter(prefix="/dogs/{dog_id}/schedule", tags=["schedules"])
 
@@ -47,18 +48,21 @@ def regenerate_schedule(dog_id: int, db: Session = Depends(get_db)):
     return _generate_and_save(dog_id, db, today)
 
 
-def _generate_and_save(dog_id: int, db: Session, today: date_type) -> Schedule:
+def _generate_and_save(dog: Dog, db: Session, today: date_type) -> Schedule:
     events = (
         db.query(Event)
-        .filter(Event.dog_id == dog_id)
+        .filter(Event.dog_id == dog.id)
         .order_by(Event.timestamp.asc())
         .all()
     )
 
-    generated = generate_schedule(events)
+    breed_info = fetch_breed_info(dog.breed or "")
+    energy_multiplier = estimate_energy_multiplier(breed_info.temperament)
+
+    generated = generate_schedule(events, energy_multiplier=energy_multiplier)
 
     schedule = Schedule(
-        dog_id=dog_id,
+        dog_id=dog.id,
         date=today,
         blocks=[
             {"type": b.type, "time": b.time_str, "reason": b.reason}
