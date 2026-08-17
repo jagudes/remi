@@ -26,8 +26,6 @@ app.include_router(schedules.router)
 @app.on_event("startup")
 def on_startup():
     Base.metadata.create_all(bind=engine)
-    _seed_default_user()
-
 
 def _seed_default_user():
     db: Session = SessionLocal()

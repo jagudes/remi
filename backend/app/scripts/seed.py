@@ -4,7 +4,7 @@ from datetime import datetime, timedelta, timezone
 from app.database import SessionLocal
 from app.models.event import Event, EventType
 
-DOG_ID = 1
+DOG_ID = 7
 DAYS_TO_GENERATE = 20
 
 

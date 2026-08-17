@@ -7,6 +7,8 @@ from app.database import get_db
 from app.models.dog import Dog
 from app.models.event import Event
 from app.models.schedule import Schedule
+from app.models.user import User
+from app.dependencies import get_current_user
 from app.schemas.schedule import ScheduleOut
 from app.services.planner import generate_schedule
 from app.services.breed_info import fetch_breed_info, estimate_energy_multiplier
@@ -15,16 +17,17 @@ from app.services.age_estimator import estimate_age_multiplier
 router = APIRouter(prefix="/dogs/{dog_id}/schedule", tags=["schedules"])
 
 
-def _get_dog_or_404(dog_id: int, db: Session) -> Dog:
-    dog = db.query(Dog).filter(Dog.id == dog_id).first()
+def _get_dog_or_404(dog_id: int,user: User, db: Session) -> Dog:
+    dog = db.query(Dog).filter(Dog.id == dog_id, Dog.owner_id == user.id).first()
     if not dog:
         raise HTTPException(status_code=404, detail="Dog not found")
     return dog
 
 
 @router.get("", response_model=ScheduleOut)
-def get_or_generate_schedule(dog_id: int, db: Session = Depends(get_db)):
-    _get_dog_or_404(dog_id, db)
+def get_or_generate_schedule(dog_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user),
+):
+    dog = _get_dog_or_404(dog_id, current_user, db)
     today = date_type.today()
 
     existing = (
@@ -35,18 +38,19 @@ def get_or_generate_schedule(dog_id: int, db: Session = Depends(get_db)):
     if existing:
         return existing
 
-    return _generate_and_save(dog_id, db, today)
+    return _generate_and_save(dog, db, today)
 
 
 @router.post("/regenerate", response_model=ScheduleOut)
-def regenerate_schedule(dog_id: int, db: Session = Depends(get_db)):
-    _get_dog_or_404(dog_id, db)
+def regenerate_schedule(dog_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user),
+):
+    dog = _get_dog_or_404(dog_id, current_user, db)
     today = date_type.today()
 
     db.query(Schedule).filter(Schedule.dog_id == dog_id, Schedule.date == today).delete()
     db.commit()
 
-    return _generate_and_save(dog_id, db, today)
+    return _generate_and_save(dog, db, today)
 
 
 def _generate_and_save(dog: Dog, db: Session, today: date_type) -> Schedule:
