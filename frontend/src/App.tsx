@@ -3,6 +3,8 @@ import { getDogs, createDog, getEvents, logEvent, getPrediction, getSchedule, re
 import type { Dog, DogEvent, EventType, Prediction, Schedule, BreedInfo } from "./types";
 import { Dashboard } from "./components/Dashboard";
 import { ScheduleView } from "./components/ScheduleView";
+import { AuthScreen } from "./components/AuthScreen";
+
 
 const EVENT_LABELS: Record<EventType, string> = {
   pee: "🐕 Siku",
@@ -14,6 +16,9 @@ const EVENT_LABELS: Record<EventType, string> = {
 };
 
 function App() {
+    const [token, setToken] = useState<string | null>(
+    localStorage.getItem("remi_token")
+  );
   const [dogs, setDogs] = useState<Dog[]>([]);
   const [activeDogId, setActiveDogId] = useState<number | null>(null);
   const [events, setEvents] = useState<DogEvent[]>([]);
@@ -26,11 +31,13 @@ function App() {
   const [breedLoading, setBreedLoading] = useState(false);
 
   useEffect(() => {
+      if (!token) return;
+
     getDogs().then((data: Dog[]) => {
       setDogs(data);
       if (data.length > 0) setActiveDogId(data[0].id);
     });
-  }, []);
+  }, [token]);
 
 useEffect(() => {
   if (activeDogId !== null) {
@@ -102,9 +109,38 @@ async function refreshPrediction(dogId: number) {
 
   const activeDog = dogs.find((d) => d.id === activeDogId);
 
+    if (!token) {
+    return (
+      <AuthScreen
+        onLoggedIn={(newToken) => {
+          localStorage.setItem("remi_token", newToken);
+          setToken(newToken);
+        }}
+      />
+    );
+  }
+
   return (
     <div>
-      <h1 style={{ fontSize: 24, marginBottom: 4 }}>🐾 Remi</h1>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+        <h1 style={{ fontSize: 24, marginBottom: 4 }}>🐾 Remi</h1>
+        <button
+          onClick={() => {
+            localStorage.removeItem("remi_token");
+            setToken(null);
+          }}
+          style={{
+            fontSize: 12,
+            padding: "4px 10px",
+            borderRadius: 6,
+            border: "1px solid #d8d2c4",
+            background: "white",
+            cursor: "pointer",
+          }}
+        >
+          Wyloguj
+        </button>
+      </div>
       <p style={{ color: "#7a7266", marginTop: 0 }}>
         Śledzenie zachowania szczeniaka
       </p>
