@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-
+from app.dependencies import get_current_user
 from app.database import get_db
 from app.models.user import User
 from app.schemas.auth import UserRegister, UserLogin, TokenOut, UserOut
@@ -30,3 +30,9 @@ def login(payload: UserLogin, db: Session = Depends(get_db)):
 
     token = create_access_token(user.id)
     return TokenOut(access_token=token)
+
+@router.get("/users", response_model=list[UserOut])
+def list_users(
+    db: Session = Depends(get_db)):
+
+    return db.query(User).all()
